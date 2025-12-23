@@ -63,7 +63,8 @@ import {
   MessageSquareText,
   Mic,
   Send,
-  ShieldQuestion
+  ShieldQuestion,
+  Crown
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { jsPDF } from "jspdf";
@@ -72,6 +73,7 @@ import { jsPDF } from "jspdf";
 type OfferCategory = 'high-ticket' | 'low-ticket' | 'ecommerce' | 'physical' | 'services';
 type Language = 'es' | 'en';
 type ScriptType = 'vsl' | 'closer' | 'dm' | 'email';
+type UserPlan = 'free' | 'scale-master' | 'agency';
 
 interface OfferResult {
   text: string;
@@ -117,6 +119,7 @@ const ADMIN_KEY = 'hormozi_admin_unlocked';
 const KNOWLEDGE_KEY = 'hormozi_knowledge_base';
 const PERMANENT_BRAIN_KEY = 'hormozi_permanent_brain';
 const LANG_KEY = 'alexia_language';
+const USER_PLAN_KEY = 'alexia_user_plan';
 const ADMIN_PASSWORD = "Daya2707";
 const MAX_FREE_TRIAL = 1;
 
@@ -146,6 +149,7 @@ const translations = {
     unlockNow: "DESBLOQUEAR AHORA",
     langName: "ES",
     navAdmin: "Panel Maestro",
+    navPremium: "Herramientas Premium",
     close: "Cerrar",
     exportJson: "Exportar JSON",
     exportTxt: "Exportar TXT",
@@ -170,7 +174,10 @@ const translations = {
     scriptTypeCloser: "Llamada Closer",
     scriptTypeDM: "Mensajes DM",
     scriptTypeEmail: "Email Frío",
-    scriptCopy: "Copiar Guion"
+    scriptCopy: "Copiar Guion",
+    premiumHubTitle: "HUB DE ELITE SCALE MASTER",
+    premiumHubSub: "Herramientas de guerra comercial reservadas para profesionales.",
+    premiumLocked: "PLAN SCALE MASTER REQUERIDO"
   },
   en: {
     badge: "Create an offer so good people feel stupid saying no",
@@ -196,6 +203,7 @@ const translations = {
     unlockNow: "UNLOCK NOW",
     langName: "EN",
     navAdmin: "Master Panel",
+    navPremium: "Premium Tools",
     close: "Close",
     exportJson: "Export JSON",
     exportTxt: "Export TXT",
@@ -220,7 +228,10 @@ const translations = {
     scriptTypeCloser: "Closer Call",
     scriptTypeDM: "DM Outreach",
     scriptTypeEmail: "Cold Email",
-    scriptCopy: "Copy Script"
+    scriptCopy: "Copy Script",
+    premiumHubTitle: "SCALE MASTER ELITE HUB",
+    premiumHubSub: "Commercial warfare tools reserved for professionals.",
+    premiumLocked: "SCALE MASTER PLAN REQUIRED"
   }
 };
 
@@ -308,14 +319,17 @@ const App = () => {
   const [trialCount, setTrialCount] = useState(0);
   const [expandedOfferId, setExpandedOfferId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [userPlan, setUserPlan] = useState<UserPlan>('free');
   const [showLogin, setShowLogin] = useState(false);
   const [showSignup, setShowSignup] = useState<string | null>(null);
+  const [showPremiumHub, setShowPremiumHub] = useState(false);
   const [loginPass, setLoginPass] = useState('');
   const [loginError, setLoginError] = useState(false);
   const [knowledgeBase, setKnowledgeBase] = useState<KnowledgeItem[]>([]);
   const [permanentBrain, setPermanentBrain] = useState<string>('');
   const [adminMenuOpen, setAdminMenuOpen] = useState(false);
   const [adminTab, setAdminTab] = useState<'brain' | 'library' | 'leads' | 'competitor' | 'scripts'>('brain');
+  const [premiumTab, setPremiumTab] = useState<'competitor' | 'scripts'>('competitor');
   const [searchQuery, setSearchQuery] = useState('');
   const [logoClicks, setLogoClicks] = useState(0);
   const [lastLogoClick, setLastLogoClick] = useState(0);
@@ -352,6 +366,7 @@ const App = () => {
     const knowledge = localStorage.getItem(KNOWLEDGE_KEY);
     const brain = localStorage.getItem(PERMANENT_BRAIN_KEY);
     const lang = localStorage.getItem(LANG_KEY);
+    const plan = localStorage.getItem(USER_PLAN_KEY);
     
     if (saved) setHistory(JSON.parse(saved));
     if (global) setGlobalLibrary(JSON.parse(global));
@@ -361,6 +376,7 @@ const App = () => {
     if (knowledge) setKnowledgeBase(JSON.parse(knowledge));
     if (brain) setPermanentBrain(brain);
     if (lang) setLanguage(lang as Language);
+    if (plan) setUserPlan(plan as UserPlan);
   }, []);
 
   const toggleLanguage = () => {
@@ -411,6 +427,13 @@ const App = () => {
     const updatedLeads = [newLead, ...leads];
     setLeads(updatedLeads);
     localStorage.setItem(LEADS_KEY, JSON.stringify(updatedLeads));
+    
+    // Simulate plan activation for demo
+    if (showSignup?.includes('Scale Master')) {
+        setUserPlan('scale-master');
+        localStorage.setItem(USER_PLAN_KEY, 'scale-master');
+    }
+
     setSignupSuccess(true);
     setTimeout(() => {
       setShowSignup(null);
@@ -761,6 +784,139 @@ const App = () => {
   };
 
   const isLocked = !isAdmin && trialCount >= MAX_FREE_TRIAL;
+  const isScaleMaster = isAdmin || userPlan === 'scale-master' || userPlan === 'agency';
+
+  const CompetitorContent = () => (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+        <div className="space-y-6">
+        <textarea 
+            className="w-full bg-black/40 border-2 border-white/5 rounded-3xl p-6 text-sm font-bold placeholder:text-gray-700 min-h-[300px] outline-none focus:border-[#FF5C00]/50 transition-all"
+            placeholder={t('compPlaceholder')}
+            value={competitorInput}
+            onChange={(e) => setCompetitorInput(e.target.value)}
+        />
+        <button 
+            onClick={analyzeCompetitor}
+            disabled={isAnalyzingComp || !competitorInput.trim()}
+            className="w-full py-5 bg-[#FF5C00] hover:bg-[#E04F00] disabled:bg-white/5 text-white font-black uppercase italic tracking-tighter rounded-2xl shadow-xl transition-all flex items-center justify-center gap-3 group"
+        >
+            {isAnalyzingComp ? <Loader2 className="animate-spin w-6 h-6" /> : <Skull className="w-6 h-6 group-hover:rotate-12 transition-transform" />}
+            {isAnalyzingComp ? t('generatingBtn') : t('compBtn')}
+        </button>
+        </div>
+
+        <div className="bg-black/20 border-2 border-white/5 rounded-3xl p-8 overflow-y-auto max-h-[500px] relative">
+        {!competitorResult && !isAnalyzingComp ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center opacity-20">
+            <Target className="w-16 h-16 mb-4" />
+            <p className="font-black uppercase italic text-sm tracking-widest">Esperando objetivo para análisis estratégico...</p>
+            </div>
+        ) : (
+            <div className="prose prose-invert max-w-none">
+            <h4 className="text-[#FF5C00] font-black uppercase italic text-xl mb-6">{t('compResultTitle')}</h4>
+            <ReactMarkdown components={{
+                table: ({...props}) => <div className="overflow-x-auto my-6"><table className="w-full border-collapse border border-white/10" {...props} /></div>,
+                th: ({...props}) => <th className="bg-[#FF5C00]/10 text-[#FF5C00] border border-white/10 p-4 text-left text-[10px] font-black uppercase" {...props} />,
+                td: ({...props}) => <td className="border border-white/10 p-4 text-xs font-bold" {...props} />,
+            }}>
+                {competitorResult}
+            </ReactMarkdown>
+            </div>
+        )}
+        </div>
+    </div>
+  );
+
+  const ScriptsContent = () => (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-1 space-y-6">
+        <div className="space-y-2">
+            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-2 italic">1. Seleccionar Oferta</label>
+            <select 
+            className="w-full bg-black/40 border-2 border-white/5 rounded-2xl p-4 text-xs font-bold uppercase outline-none focus:border-[#FF5C00]/50"
+            value={selectedOfferId}
+            onChange={(e) => setSelectedOfferId(e.target.value)}
+            >
+            <option value="">-- ÚLTIMA GENERADA --</option>
+            {history.map(o => (
+                <option key={o.id} value={o.id}>{o.input.substring(0, 30)}...</option>
+            ))}
+            </select>
+        </div>
+
+        <div className="space-y-2">
+            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-2 italic">2. Formato del Arma</label>
+            <div className="grid grid-cols-2 gap-2">
+            {(['closer', 'vsl', 'dm', 'email'] as ScriptType[]).map(type => (
+                <button 
+                key={type}
+                onClick={() => setScriptType(type)}
+                className={`p-4 rounded-xl border-2 text-[10px] font-black uppercase italic flex items-center justify-center gap-2 transition-all ${scriptType === type ? 'bg-[#FF5C00] border-[#FF5C00] text-white shadow-lg' : 'bg-black/20 border-white/5 text-gray-500 hover:text-white'}`}
+                >
+                {type === 'vsl' ? <Video className="w-4 h-4" /> : type === 'closer' ? <Mic className="w-4 h-4" /> : type === 'dm' ? <Send className="w-4 h-4" /> : <Mail className="w-4 h-4" />}
+                {t(`scriptType${type.toUpperCase()}` as any)}
+                </button>
+            ))}
+            </div>
+        </div>
+
+        <div className="space-y-2">
+            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-2 italic flex items-center gap-2">
+            <ShieldQuestion className="w-3 h-3 text-[#FF5C00]" /> {t('scriptObjections')}
+            </label>
+            <textarea 
+            className="w-full bg-black/40 border-2 border-white/5 rounded-2xl p-5 text-xs font-bold min-h-[120px] outline-none focus:border-[#FF5C00]/50"
+            placeholder="Ej: Es muy caro, No tengo tiempo, Tengo que consultarlo..."
+            value={scriptObjections}
+            onChange={(e) => setScriptObjections(e.target.value)}
+            />
+        </div>
+
+        <button 
+            onClick={generateSalesScript}
+            disabled={isGeneratingScript}
+            className="w-full py-5 bg-white text-black font-black uppercase italic tracking-tighter rounded-2xl shadow-xl transition-all flex items-center justify-center gap-3 group hover:bg-[#FF5C00] hover:text-white"
+        >
+            {isGeneratingScript ? <Loader2 className="animate-spin w-6 h-6" /> : <Flame className="w-6 h-6 group-hover:animate-bounce" />}
+            {isGeneratingScript ? t('generatingBtn') : t('scriptBtn')}
+        </button>
+        </div>
+
+        <div className="lg:col-span-2 bg-black/40 border-2 border-white/5 rounded-[2.5rem] p-10 relative overflow-hidden flex flex-col min-h-[500px]">
+        {!scriptResult && !isGeneratingScript ? (
+            <div className="flex-1 flex flex-col items-center justify-center opacity-10">
+            <MessageSquareText className="w-24 h-24 mb-4" />
+            <p className="font-black uppercase italic text-xl">LISTO PARA REDACTAR PERSUASIÓN</p>
+            </div>
+        ) : (
+            <>
+            <div className="flex justify-between items-center mb-8">
+                <span className="text-[10px] font-black text-[#FF5C00] uppercase tracking-widest bg-[#FF5C00]/10 px-4 py-1 rounded-full">SCRIPT ACTIVO // {scriptType.toUpperCase()}</span>
+                <button 
+                onClick={() => {
+                    navigator.clipboard.writeText(scriptResult);
+                }}
+                className="text-gray-500 hover:text-white flex items-center gap-2 text-[10px] font-black uppercase transition-all"
+                >
+                <Copy className="w-4 h-4" /> {t('scriptCopy')}
+                </button>
+            </div>
+            <div className="flex-1 overflow-y-auto pr-4 custom-scrollbar script-content">
+                <div className="prose prose-invert max-w-none">
+                <ReactMarkdown components={{
+                    p: ({...props}) => <p className="mb-6 leading-relaxed text-lg font-medium text-gray-300" {...props} />,
+                    strong: ({...props}) => <strong className="text-[#FF5C00] font-black uppercase italic" {...props} />,
+                    h1: ({...props}) => <h1 className="text-3xl font-black uppercase italic border-b-2 border-[#FF5C00] pb-2 mb-8" {...props} />,
+                }}>
+                    {scriptResult}
+                </ReactMarkdown>
+                </div>
+            </div>
+            </>
+        )}
+        </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-gray-100 font-sans selection:bg-[#FF5C00]">
@@ -786,6 +942,14 @@ const App = () => {
               <Languages className="w-4 h-4 text-[#FF5C00]" />
               {t('langName')}
             </button>
+            
+            <button 
+              onClick={() => setShowPremiumHub(true)}
+              className={`text-xs font-black uppercase flex items-center gap-2 px-5 py-2.5 rounded-full border transition-all ${isScaleMaster ? 'bg-[#FF5C00]/10 border-[#FF5C00]/40 text-[#FF5C00] hover:bg-[#FF5C00]/20' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'}`}
+            >
+              <Crown className="w-4 h-4" /> {t('navPremium')}
+            </button>
+
             {isAdmin && (
               <button 
                 onClick={() => setAdminMenuOpen(!adminMenuOpen)}
@@ -801,28 +965,6 @@ const App = () => {
         </div>
       </nav>
 
-      {/* ADMIN LOGIN MODAL */}
-      {showLogin && (
-        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-300">
-          <div className="bg-[#141414] border-2 border-[#FF5C00]/30 w-full max-w-md rounded-[2.5rem] p-10 relative shadow-[0_0_50px_rgba(255,92,0,0.25)]">
-            <button onClick={() => setShowLogin(false)} className="absolute top-6 right-6 text-gray-500 hover:text-white transition-colors"><X className="w-6 h-6" /></button>
-            <div className="text-center mb-8">
-              <KeyRound className="w-12 h-12 text-[#FF5C00] mx-auto mb-4" />
-              <h3 className="text-3xl font-black uppercase italic">{t('adminMode')}</h3>
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mt-2 italic">Solo para estrategas master</p>
-            </div>
-            <form onSubmit={handleAdminLogin} className="space-y-6">
-              <input 
-                autoFocus type="password" placeholder="PASSWORD"
-                className={`w-full bg-black/60 border-2 rounded-2xl p-5 text-center text-xl font-black tracking-[0.3em] outline-none ${loginError ? 'border-red-500 animate-shake' : 'border-white/5 focus:border-[#FF5C00]'}`}
-                value={loginPass} onChange={(e) => setLoginPass(e.target.value)}
-              />
-              <button type="submit" className="w-full bg-[#FF5C00] text-white py-5 rounded-2xl font-black uppercase shadow-xl hover:scale-[1.02] transition-all">AUTENTICAR</button>
-            </form>
-          </div>
-        </div>
-      )}
-
       {/* ADMIN DASHBOARD MODAL */}
       {isAdmin && adminMenuOpen && (
         <div className="fixed inset-0 z-[60] bg-black/95 backdrop-blur-2xl p-6 overflow-y-auto animate-in slide-in-from-bottom-10 duration-500">
@@ -835,36 +977,11 @@ const App = () => {
                   Centro de Control Maestro
                 </h2>
                 <div className="flex flex-wrap gap-4 mt-4">
-                  <button 
-                    onClick={() => setAdminTab('brain')}
-                    className={`px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all ${adminTab === 'brain' ? 'bg-[#FF5C00] text-white shadow-lg' : 'bg-white/5 text-gray-500 hover:text-white'}`}
-                  >
-                    {t('adminTabBrain')}
-                  </button>
-                  <button 
-                    onClick={() => setAdminTab('competitor')}
-                    className={`px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all ${adminTab === 'competitor' ? 'bg-[#FF5C00] text-white shadow-lg' : 'bg-white/5 text-gray-500 hover:text-white'}`}
-                  >
-                    {t('adminTabCompetitor')}
-                  </button>
-                  <button 
-                    onClick={() => setAdminTab('scripts')}
-                    className={`px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all ${adminTab === 'scripts' ? 'bg-[#FF5C00] text-white shadow-lg' : 'bg-white/5 text-gray-500 hover:text-white'}`}
-                  >
-                    {t('adminTabScripts')}
-                  </button>
-                  <button 
-                    onClick={() => setAdminTab('library')}
-                    className={`px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all ${adminTab === 'library' ? 'bg-[#FF5C00] text-white shadow-lg' : 'bg-white/5 text-gray-500 hover:text-white'}`}
-                  >
-                    {t('adminTabLibrary')}
-                  </button>
-                  <button 
-                    onClick={() => setAdminTab('leads')}
-                    className={`px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all ${adminTab === 'leads' ? 'bg-[#FF5C00] text-white shadow-lg' : 'bg-white/5 text-gray-500 hover:text-white'}`}
-                  >
-                    {t('adminTabLeads')}
-                  </button>
+                  <button onClick={() => setAdminTab('brain')} className={`px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all ${adminTab === 'brain' ? 'bg-[#FF5C00] text-white' : 'bg-white/5 text-gray-500'}`}>{t('adminTabBrain')}</button>
+                  <button onClick={() => setAdminTab('competitor')} className={`px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all ${adminTab === 'competitor' ? 'bg-[#FF5C00] text-white' : 'bg-white/5 text-gray-500'}`}>{t('adminTabCompetitor')}</button>
+                  <button onClick={() => setAdminTab('scripts')} className={`px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all ${adminTab === 'scripts' ? 'bg-[#FF5C00] text-white' : 'bg-white/5 text-gray-500'}`}>{t('adminTabScripts')}</button>
+                  <button onClick={() => setAdminTab('library')} className={`px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all ${adminTab === 'library' ? 'bg-[#FF5C00] text-white' : 'bg-white/5 text-gray-500'}`}>{t('adminTabLibrary')}</button>
+                  <button onClick={() => setAdminTab('leads')} className={`px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all ${adminTab === 'leads' ? 'bg-[#FF5C00] text-white' : 'bg-white/5 text-gray-500'}`}>{t('adminTabLeads')}</button>
                 </div>
               </div>
               <div className="flex gap-4">
@@ -874,7 +991,7 @@ const App = () => {
             </div>
 
             {adminTab === 'brain' && (
-              <>
+              <div className="animate-in fade-in duration-500">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-16">
                   <div className="bg-[#111] p-8 rounded-3xl border border-white/5 relative overflow-hidden group hover:border-[#FF5C00]/20 transition-all">
                     <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-30 transition-opacity"><Cpu className="w-20 h-20 text-[#FF5C00]" /></div>
@@ -949,166 +1066,14 @@ const App = () => {
                     )}
                   </div>
                 </div>
-              </>
-            )}
-
-            {adminTab === 'competitor' && (
-              <div className="bg-[#141414] border-2 border-white/5 rounded-[3rem] p-8 md:p-12 shadow-2xl animate-in slide-in-from-right-4 duration-500">
-                <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-12">
-                    <div>
-                      <h3 className="text-3xl font-black uppercase italic flex items-center gap-3">
-                        <Sword className="w-8 h-8 text-[#FF5C00]" /> {t('adminTabCompetitor')}
-                      </h3>
-                      <p className="text-gray-500 text-sm font-bold uppercase mt-1 italic">Encuentra los agujeros en su oferta y aplástalos con valor masivo</p>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                  <div className="space-y-6">
-                    <textarea 
-                      className="w-full bg-black/40 border-2 border-white/5 rounded-3xl p-6 text-sm font-bold placeholder:text-gray-700 min-h-[300px] outline-none focus:border-[#FF5C00]/50 transition-all"
-                      placeholder={t('compPlaceholder')}
-                      value={competitorInput}
-                      onChange={(e) => setCompetitorInput(e.target.value)}
-                    />
-                    <button 
-                      onClick={analyzeCompetitor}
-                      disabled={isAnalyzingComp || !competitorInput.trim()}
-                      className="w-full py-5 bg-[#FF5C00] hover:bg-[#E04F00] disabled:bg-white/5 text-white font-black uppercase italic tracking-tighter rounded-2xl shadow-xl transition-all flex items-center justify-center gap-3 group"
-                    >
-                      {isAnalyzingComp ? <Loader2 className="animate-spin w-6 h-6" /> : <Skull className="w-6 h-6 group-hover:rotate-12 transition-transform" />}
-                      {isAnalyzingComp ? t('generatingBtn') : t('compBtn')}
-                    </button>
-                  </div>
-
-                  <div className="bg-black/20 border-2 border-white/5 rounded-3xl p-8 overflow-y-auto max-h-[500px] relative">
-                    {!competitorResult && !isAnalyzingComp ? (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center opacity-20">
-                        <Target className="w-16 h-16 mb-4" />
-                        <p className="font-black uppercase italic text-sm tracking-widest">Esperando objetivo para análisis estratégico...</p>
-                      </div>
-                    ) : (
-                      <div className="prose prose-invert max-w-none">
-                        <h4 className="text-[#FF5C00] font-black uppercase italic text-xl mb-6">{t('compResultTitle')}</h4>
-                        <ReactMarkdown components={{
-                          table: ({...props}) => <div className="overflow-x-auto my-6"><table className="w-full border-collapse border border-white/10" {...props} /></div>,
-                          th: ({...props}) => <th className="bg-[#FF5C00]/10 text-[#FF5C00] border border-white/10 p-4 text-left text-[10px] font-black uppercase" {...props} />,
-                          td: ({...props}) => <td className="border border-white/10 p-4 text-xs font-bold" {...props} />,
-                        }}>
-                          {competitorResult}
-                        </ReactMarkdown>
-                      </div>
-                    )}
-                  </div>
-                </div>
               </div>
             )}
 
-            {adminTab === 'scripts' && (
-              <div className="bg-[#141414] border-2 border-white/5 rounded-[3rem] p-8 md:p-12 shadow-2xl animate-in slide-in-from-right-4 duration-500">
-                <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-12">
-                    <div>
-                      <h3 className="text-3xl font-black uppercase italic flex items-center gap-3">
-                        <MessageSquareText className="w-8 h-8 text-[#FF5C00]" /> {t('adminTabScripts')}
-                      </h3>
-                      <p className="text-gray-500 text-sm font-bold uppercase mt-1 italic">Carga tus ofertas en armas de persuasión masiva</p>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                  <div className="lg:col-span-1 space-y-6">
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-2 italic">1. Seleccionar Oferta</label>
-                      <select 
-                        className="w-full bg-black/40 border-2 border-white/5 rounded-2xl p-4 text-xs font-bold uppercase outline-none focus:border-[#FF5C00]/50"
-                        value={selectedOfferId}
-                        onChange={(e) => setSelectedOfferId(e.target.value)}
-                      >
-                        <option value="">-- ÚLTIMA GENERADA --</option>
-                        {history.map(o => (
-                          <option key={o.id} value={o.id}>{o.input.substring(0, 30)}...</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-2 italic">2. Formato del Arma</label>
-                      <div className="grid grid-cols-2 gap-2">
-                        {(['closer', 'vsl', 'dm', 'email'] as ScriptType[]).map(type => (
-                          <button 
-                            key={type}
-                            onClick={() => setScriptType(type)}
-                            className={`p-4 rounded-xl border-2 text-[10px] font-black uppercase italic flex items-center justify-center gap-2 transition-all ${scriptType === type ? 'bg-[#FF5C00] border-[#FF5C00] text-white shadow-lg' : 'bg-black/20 border-white/5 text-gray-500 hover:text-white'}`}
-                          >
-                            {type === 'vsl' ? <Video className="w-4 h-4" /> : type === 'closer' ? <Mic className="w-4 h-4" /> : type === 'dm' ? <Send className="w-4 h-4" /> : <Mail className="w-4 h-4" />}
-                            {t(`scriptType${type.toUpperCase()}` as any)}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-2 italic flex items-center gap-2">
-                        <ShieldQuestion className="w-3 h-3 text-[#FF5C00]" /> {t('scriptObjections')}
-                      </label>
-                      <textarea 
-                        className="w-full bg-black/40 border-2 border-white/5 rounded-2xl p-5 text-xs font-bold min-h-[120px] outline-none focus:border-[#FF5C00]/50"
-                        placeholder="Ej: Es muy caro, No tengo tiempo, Tengo que consultarlo..."
-                        value={scriptObjections}
-                        onChange={(e) => setScriptObjections(e.target.value)}
-                      />
-                    </div>
-
-                    <button 
-                      onClick={generateSalesScript}
-                      disabled={isGeneratingScript}
-                      className="w-full py-5 bg-white text-black font-black uppercase italic tracking-tighter rounded-2xl shadow-xl transition-all flex items-center justify-center gap-3 group hover:bg-[#FF5C00] hover:text-white"
-                    >
-                      {isGeneratingScript ? <Loader2 className="animate-spin w-6 h-6" /> : <Flame className="w-6 h-6 group-hover:animate-bounce" />}
-                      {isGeneratingScript ? t('generatingBtn') : t('scriptBtn')}
-                    </button>
-                  </div>
-
-                  <div className="lg:col-span-2 bg-black/40 border-2 border-white/5 rounded-[2.5rem] p-10 relative overflow-hidden flex flex-col min-h-[500px]">
-                    {!scriptResult && !isGeneratingScript ? (
-                      <div className="flex-1 flex flex-col items-center justify-center opacity-10">
-                        <MessageSquareText className="w-24 h-24 mb-4" />
-                        <p className="font-black uppercase italic text-xl">LISTO PARA REDACTAR PERSUASIÓN</p>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="flex justify-between items-center mb-8">
-                          <span className="text-[10px] font-black text-[#FF5C00] uppercase tracking-widest bg-[#FF5C00]/10 px-4 py-1 rounded-full">SCRIPT ACTIVO // {scriptType.toUpperCase()}</span>
-                          <button 
-                            onClick={() => {
-                              navigator.clipboard.writeText(scriptResult);
-                              // Simple visual feedback could go here
-                            }}
-                            className="text-gray-500 hover:text-white flex items-center gap-2 text-[10px] font-black uppercase transition-all"
-                          >
-                            <Copy className="w-4 h-4" /> {t('scriptCopy')}
-                          </button>
-                        </div>
-                        <div className="flex-1 overflow-y-auto pr-4 custom-scrollbar script-content">
-                          <div className="prose prose-invert max-w-none">
-                            <ReactMarkdown components={{
-                              p: ({...props}) => <p className="mb-6 leading-relaxed text-lg font-medium text-gray-300" {...props} />,
-                              strong: ({...props}) => <strong className="text-[#FF5C00] font-black uppercase italic" {...props} />,
-                              h1: ({...props}) => <h1 className="text-3xl font-black uppercase italic border-b-2 border-[#FF5C00] pb-2 mb-8" {...props} />,
-                            }}>
-                              {scriptResult}
-                            </ReactMarkdown>
-                          </div>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
+            {adminTab === 'competitor' && <div className="animate-in slide-in-from-right-4 duration-500"><CompetitorContent /></div>}
+            {adminTab === 'scripts' && <div className="animate-in slide-in-from-right-4 duration-500"><ScriptsContent /></div>}
 
             {adminTab === 'library' && (
-              <div className="bg-[#141414] border-2 border-white/5 rounded-[3rem] p-10 shadow-2xl">
+              <div className="bg-[#141414] border-2 border-white/5 rounded-[3rem] p-10 shadow-2xl animate-in fade-in duration-500">
                  <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-6">
                     <h3 className="text-2xl font-black uppercase italic flex items-center gap-3">
                       <Search className="w-6 h-6 text-[#FF5C00]" /> Bóveda de Inteligencia
@@ -1137,7 +1102,7 @@ const App = () => {
             )}
 
             {adminTab === 'leads' && (
-              <div className="bg-[#141414] border-2 border-white/5 rounded-[3rem] p-10 shadow-2xl">
+              <div className="bg-[#141414] border-2 border-white/5 rounded-[3rem] p-10 shadow-2xl animate-in fade-in duration-500">
                  <h3 className="text-2xl font-black uppercase italic flex items-center gap-3 mb-10">
                     <UserCheck className="w-6 h-6 text-[#FF5C00]" /> Base de Datos de Contactos
                  </h3>
@@ -1165,6 +1130,70 @@ const App = () => {
                  </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* PREMIUM HUB MODAL (FOR SCALE MASTER) */}
+      {showPremiumHub && (
+          <div className="fixed inset-0 z-[70] bg-black/95 backdrop-blur-3xl p-6 overflow-y-auto animate-in slide-in-from-top-10 duration-500">
+              <div className="max-w-6xl mx-auto pb-20 pt-10">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 border-b border-white/10 pb-8 gap-6">
+                      <div>
+                        <h2 className="text-4xl font-black italic uppercase flex items-center gap-4 text-white">
+                          <Crown className="w-10 h-10 text-[#FF5C00]" />
+                          {t('premiumHubTitle')}
+                        </h2>
+                        <p className="text-gray-500 font-bold uppercase tracking-widest text-xs mt-2 italic">{t('premiumHubSub')}</p>
+                      </div>
+                      <button onClick={() => setShowPremiumHub(false)} className="bg-white/5 p-4 rounded-2xl hover:bg-white/10 transition-all border border-white/5"><X className="w-6 h-6" /></button>
+                  </div>
+
+                  {!isScaleMaster ? (
+                    <div className="bg-[#111] border-2 border-white/5 rounded-[3rem] p-20 text-center flex flex-col items-center justify-center animate-in zoom-in duration-500">
+                        <Lock className="w-20 h-20 text-[#FF5C00] mb-8" />
+                        <h3 className="text-4xl font-black uppercase italic mb-4">{t('premiumLocked')}</h3>
+                        <p className="text-gray-400 max-w-md mx-auto font-bold uppercase text-xs tracking-widest leading-loose mb-10">Las herramientas de espionaje comercial y persuasión avanzada están bloqueadas para usuarios gratuitos. Escala tu plan para dominar el mercado.</p>
+                        <button onClick={() => { setShowPremiumHub(false); scrollToPricing(); }} className="bg-[#FF5C00] text-white px-12 py-6 rounded-2xl font-black uppercase text-xl shadow-2xl hover:scale-105 transition-all">DESBLOQUEAR AHORA</button>
+                    </div>
+                  ) : (
+                    <div className="space-y-12">
+                         <div className="flex gap-4">
+                            <button onClick={() => setPremiumTab('competitor')} className={`px-10 py-4 rounded-2xl text-xs font-black uppercase italic tracking-widest transition-all ${premiumTab === 'competitor' ? 'bg-[#FF5C00] text-white shadow-xl scale-105' : 'bg-white/5 text-gray-500 hover:text-white'}`}>
+                                <Sword className="w-4 h-4 inline mr-2" /> Analizador de Competencia
+                            </button>
+                            <button onClick={() => setPremiumTab('scripts')} className={`px-10 py-4 rounded-2xl text-xs font-black uppercase italic tracking-widest transition-all ${premiumTab === 'scripts' ? 'bg-[#FF5C00] text-white shadow-xl scale-105' : 'bg-white/5 text-gray-500 hover:text-white'}`}>
+                                <MessageSquareText className="w-4 h-4 inline mr-2" /> Generador de Guiones
+                            </button>
+                         </div>
+                         
+                         <div className="animate-in fade-in duration-500">
+                            {premiumTab === 'competitor' ? <CompetitorContent /> : <ScriptsContent />}
+                         </div>
+                    </div>
+                  )}
+              </div>
+          </div>
+      )}
+
+      {/* ADMIN LOGIN MODAL */}
+      {showLogin && (
+        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-300">
+          <div className="bg-[#141414] border-2 border-[#FF5C00]/30 w-full max-w-md rounded-[2.5rem] p-10 relative shadow-[0_0_50px_rgba(255,92,0,0.25)]">
+            <button onClick={() => setShowLogin(false)} className="absolute top-6 right-6 text-gray-500 hover:text-white transition-colors"><X className="w-6 h-6" /></button>
+            <div className="text-center mb-8">
+              <KeyRound className="w-12 h-12 text-[#FF5C00] mx-auto mb-4" />
+              <h3 className="text-3xl font-black uppercase italic">{t('adminMode')}</h3>
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mt-2 italic">Solo para estrategas master</p>
+            </div>
+            <form onSubmit={handleAdminLogin} className="space-y-6">
+              <input 
+                autoFocus type="password" placeholder="PASSWORD"
+                className={`w-full bg-black/60 border-2 rounded-2xl p-5 text-center text-xl font-black tracking-[0.3em] outline-none ${loginError ? 'border-red-500 animate-shake' : 'border-white/5 focus:border-[#FF5C00]'}`}
+                value={loginPass} onChange={(e) => setLoginPass(e.target.value)}
+              />
+              <button type="submit" className="w-full bg-[#FF5C00] text-white py-5 rounded-2xl font-black uppercase shadow-xl hover:scale-[1.02] transition-all">AUTENTICAR</button>
+            </form>
           </div>
         </div>
       )}
@@ -1409,7 +1438,7 @@ const App = () => {
               value="1.500" 
               popular={true} 
               cta={language === 'es' ? 'Domina tu Mercado' : 'Dominate your Market'} 
-              onCtaClick={() => window.location.href = 'https://buy.stripe.com/dRmaEX8s2dAwekt3tGfjG0W'} 
+              onCtaClick={setShowSignup} 
               features={language === 'es' ? ["Generaciones ILIMITADAS", "Acceso a Gemini 3 Ultra", "Analizador de Competencia", "Generador de Guiones de Venta", "Soporte Prioritario VIP"] : ["UNLIMITED Generations", "Gemini 3 Ultra Access", "Competitor Analyzer", "Sales Script Gen", "Priority VIP Support"]} 
             />
             <PricingCard 
