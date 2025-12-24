@@ -1459,11 +1459,6 @@ const App = () => {
         <div className="max-w-xl mx-auto px-6">
            <div className="flex items-center justify-center gap-2 font-black italic text-3xl mb-8"><Zap className="w-8 h-8 text-[#FF5C00]" fill="#FF5C00" />ALEXIA</div>
           <p className="text-gray-500 font-bold uppercase tracking-widest text-[10px] mb-8 leading-relaxed italic">© {new Date().getFullYear()} AlexIA - {language === 'es' ? 'Todos los derechos reservados' : 'All rights reserved'}.</p>
-          <div className="flex justify-center gap-6 text-[10px] font-black uppercase tracking-widest text-gray-400 italic">
-            <a href="#" className="hover:text-[#FF5C00]">{language === 'es' ? 'Privacidad' : 'Privacy'}</a>
-            <a href="#" className="hover:text-[#FF5C00]">{language === 'es' ? 'Términos' : 'Terms'}</a>
-            <a href="#" className="hover:text-[#FF5C00]">{language === 'es' ? 'Soporte' : 'Support'}</a>
-          </div>
         </div>
       </footer>
 
