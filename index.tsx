@@ -64,7 +64,8 @@ import {
   Mic,
   Send,
   ShieldQuestion,
-  Crown
+  Crown,
+  LogIn
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { jsPDF } from "jspdf";
@@ -73,7 +74,7 @@ import { jsPDF } from "jspdf";
 type OfferCategory = 'high-ticket' | 'low-ticket' | 'ecommerce' | 'physical' | 'services';
 type Language = 'es' | 'en';
 type ScriptType = 'vsl' | 'closer' | 'dm' | 'email';
-type UserPlan = 'free' | 'scale-master' | 'agency';
+type UserPlan = 'free' | 'starter' | 'scale-master' | 'agency';
 
 interface OfferResult {
   text: string;
@@ -121,7 +122,10 @@ const PERMANENT_BRAIN_KEY = 'hormozi_permanent_brain';
 const LANG_KEY = 'alexia_language';
 const USER_PLAN_KEY = 'alexia_user_plan';
 const ADMIN_PASSWORD = "Daya2707";
+const OWNER_EMAIL = "holanewchic@gmail.com";
+const OWNER_PASS = "loko27";
 const MAX_FREE_TRIAL = 1;
+const STARTER_LIMIT = 10;
 
 // --- Translations ---
 const translations = {
@@ -133,8 +137,9 @@ const translations = {
     generateBtn: "GENERAR OFERTA GRAND SLAM",
     generatingBtn: "DISEÑANDO VALOR MASIVO...",
     viewPlans: "Ver Planes",
+    loginBtn: "Iniciar Sesión",
     credits: "Créditos Disponibles",
-    adminMode: "Modo Administrador",
+    adminMode: "Acceso Maestro",
     historyTitle: "Tu Historial",
     historySub: "Todas tus ofertas optimizadas",
     historyEmpty: "No hay ofertas guardadas todavía. Escribe arriba qué vendes y pulsa 'GENERAR OFERTA GRAND SLAM' para empezar.",
@@ -188,8 +193,9 @@ const translations = {
     generateBtn: "GENERATE GRAND SLAM OFFER",
     generatingBtn: "DESIGNING MASSIVE VALUE...",
     viewPlans: "View Plans",
+    loginBtn: "Login",
     credits: "Credits Available",
-    adminMode: "Admin Mode",
+    adminMode: "Master Access",
     historyTitle: "Your History",
     historySub: "All your optimized offers",
     historyEmpty: "No saved offers yet. Type above what you sell and click 'GENERATE GRAND SLAM OFFER' to start.",
@@ -326,6 +332,7 @@ const App = () => {
   const [showSignup, setShowSignup] = useState<string | null>(null);
   const [showPremiumHub, setShowPremiumHub] = useState(false);
   const [loginPass, setLoginPass] = useState('');
+  const [loginEmail, setLoginEmail] = useState('');
   const [loginError, setLoginError] = useState(false);
   const [knowledgeBase, setKnowledgeBase] = useState<KnowledgeItem[]>([]);
   const [permanentBrain, setPermanentBrain] = useState<string>('');
@@ -393,8 +400,7 @@ const App = () => {
       const newCount = logoClicks + 1;
       setLogoClicks(newCount);
       if (newCount >= 5) {
-        if (!isAdmin) setShowLogin(true);
-        else setAdminMenuOpen(true);
+        setShowLogin(true);
         setLogoClicks(0);
       }
     } else {
@@ -405,48 +411,69 @@ const App = () => {
 
   const handleAdminLogin = (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (loginPass === ADMIN_PASSWORD) {
+    
+    // Check for Master Admin
+    if (!loginEmail && loginPass === ADMIN_PASSWORD) {
       setIsAdmin(true);
       localStorage.setItem(ADMIN_KEY, JSON.stringify(true));
       setShowLogin(false);
       setAdminMenuOpen(true);
       setLoginPass('');
       setLoginError(false);
-    } else {
-      setLoginError(true);
-      setTimeout(() => setLoginError(false), 2000);
+      return;
     }
+
+    // Check for Owner/Starter Access
+    if (loginEmail.toLowerCase() === OWNER_EMAIL && loginPass === OWNER_PASS) {
+      setUserPlan('starter');
+      localStorage.setItem(USER_PLAN_KEY, 'starter');
+      setIsAdmin(false);
+      localStorage.setItem(ADMIN_KEY, JSON.stringify(false));
+      setShowLogin(false);
+      setLoginEmail('');
+      setLoginPass('');
+      setLoginError(false);
+      return;
+    }
+
+    setLoginError(true);
+    setTimeout(() => setLoginError(false), 2000);
   };
 
   const handleSignupSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const newLead: Lead = {
       id: Math.random().toString(36).substring(7),
-      ...signupForm,
-      plan: showSignup || 'Unknown',
+      name: signupForm.name,
+      email: signupForm.email,
+      phone: signupForm.phone,
+      plan: showSignup || 'unknown',
       timestamp: Date.now()
     };
     const updatedLeads = [newLead, ...leads];
     setLeads(updatedLeads);
     localStorage.setItem(LEADS_KEY, JSON.stringify(updatedLeads));
     
-    // Simulate plan activation for demo
-    if (showSignup?.includes('Scale Master')) {
-        setUserPlan('scale-master');
-        localStorage.setItem(USER_PLAN_KEY, 'scale-master');
+    // Upgrade plan state based on selection
+    if (showSignup?.toLowerCase().includes('scale')) {
+      setUserPlan('scale-master');
+      localStorage.setItem(USER_PLAN_KEY, 'scale-master');
+    } else if (showSignup?.toLowerCase().includes('agency')) {
+      setUserPlan('agency');
+      localStorage.setItem(USER_PLAN_KEY, 'agency');
+    } else {
+      setUserPlan('starter');
+      localStorage.setItem(USER_PLAN_KEY, 'starter');
     }
-
+    
     setSignupSuccess(true);
-    setTimeout(() => {
-      setShowSignup(null);
-      setSignupSuccess(false);
-      setSignupForm({ name: '', email: '', phone: '' });
-    }, 2000);
   };
 
   const logoutAdmin = () => {
     setIsAdmin(false);
+    setUserPlan('free');
     localStorage.setItem(ADMIN_KEY, JSON.stringify(false));
+    localStorage.setItem(USER_PLAN_KEY, 'free');
     setAdminMenuOpen(false);
   };
 
@@ -514,7 +541,11 @@ const App = () => {
   };
 
   const generateOffer = async () => {
-    if (!input.trim() || (trialCount >= MAX_FREE_TRIAL && !isAdmin)) return;
+    const currentLimit = userPlan === 'starter' ? STARTER_LIMIT : MAX_FREE_TRIAL;
+    const isLockedCheck = !isAdmin && userPlan !== 'scale-master' && userPlan !== 'agency' && trialCount >= currentLimit;
+    
+    if (!input.trim() || isLockedCheck) return;
+    
     setLoading(true);
     setResult({ text: '', isStreaming: true });
 
@@ -544,7 +575,7 @@ const App = () => {
       const final = { text: fullText, isStreaming: false, input, offerType, timestamp: Date.now() };
       setResult(final);
       
-      if (!isAdmin) {
+      if (!isAdmin && userPlan !== 'scale-master' && userPlan !== 'agency') {
         const newCount = trialCount + 1;
         setTrialCount(newCount);
         localStorage.setItem(TRIAL_COUNT_KEY, newCount.toString());
@@ -786,7 +817,8 @@ const App = () => {
     document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const isLocked = !isAdmin && trialCount >= MAX_FREE_TRIAL;
+  const currentTrialLimit = userPlan === 'starter' ? STARTER_LIMIT : MAX_FREE_TRIAL;
+  const isLocked = !isAdmin && userPlan !== 'scale-master' && userPlan !== 'agency' && trialCount >= currentTrialLimit;
   const isScaleMaster = isAdmin || userPlan === 'scale-master' || userPlan === 'agency';
 
   const CompetitorContent = () => (
@@ -936,6 +968,7 @@ const App = () => {
             <Zap className={`w-6 h-6 transition-colors ${isAdmin ? 'text-[#FF5C00]' : 'text-white'}`} fill={isAdmin ? "#FF5C00" : "none"} />
             ALEX<span className="text-[#FF5C00]">IA</span>
             {isAdmin && <span className="text-[10px] bg-[#FF5C00] text-black px-1.5 rounded-sm ml-2 not-italic">ADMIN</span>}
+            {userPlan !== 'free' && !isAdmin && <span className="text-[10px] bg-blue-500 text-white px-1.5 rounded-sm ml-2 not-italic uppercase tracking-widest">{userPlan}</span>}
           </div>
           <div className="flex items-center gap-4">
             <button 
@@ -945,6 +978,16 @@ const App = () => {
               <Languages className="w-4 h-4 text-[#FF5C00]" />
               {t('langName')}
             </button>
+
+            {userPlan === 'free' && !isAdmin && (
+              <button 
+                onClick={() => setShowLogin(true)}
+                className="text-xs font-black uppercase flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 bg-white/5 text-gray-300 hover:text-white hover:bg-white/10 transition-all"
+              >
+                <LogIn className="w-4 h-4 text-[#FF5C00]" />
+                {t('loginBtn')}
+              </button>
+            )}
 
             <button 
               onClick={() => setShowPremiumHub(true)}
@@ -961,9 +1004,19 @@ const App = () => {
                 <Database className="w-4 h-4" /> {t('navAdmin')}
               </button>
             )}
-            <button onClick={scrollToPricing} className="bg-white/5 hover:bg-white/10 px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all">
-              {t('viewPlans')}
-            </button>
+            
+            {(userPlan !== 'free' || isAdmin) ? (
+              <button 
+                onClick={logoutAdmin}
+                className="bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all border border-red-500/20"
+              >
+                {language === 'es' ? 'Salir' : 'Logout'}
+              </button>
+            ) : (
+              <button onClick={scrollToPricing} className="bg-white/5 hover:bg-white/10 px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all border border-white/10">
+                {t('viewPlans')}
+              </button>
+            )}
           </div>
         </div>
       </nav>
@@ -1179,23 +1232,28 @@ const App = () => {
           </div>
       )}
 
-      {/* ADMIN LOGIN MODAL */}
+      {/* LOGIN MODAL */}
       {showLogin && (
         <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-300">
           <div className="bg-[#141414] border-2 border-[#FF5C00]/30 w-full max-w-md rounded-[2.5rem] p-10 relative shadow-[0_0_50px_rgba(255,92,0,0.25)]">
             <button onClick={() => setShowLogin(false)} className="absolute top-6 right-6 text-gray-500 hover:text-white transition-colors"><X className="w-6 h-6" /></button>
             <div className="text-center mb-8">
               <KeyRound className="w-12 h-12 text-[#FF5C00] mx-auto mb-4" />
-              <h3 className="text-3xl font-black uppercase italic">{t('adminMode')}</h3>
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mt-2 italic">Solo para estrategas master</p>
+              <h3 className="text-3xl font-black uppercase italic">{t('loginBtn')}</h3>
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mt-2 italic">Identificación Requerida</p>
             </div>
-            <form onSubmit={handleAdminLogin} className="space-y-6">
+            <form onSubmit={handleAdminLogin} className="space-y-4">
+              <input 
+                type="email" placeholder="EMAIL"
+                className={`w-full bg-black/60 border-2 rounded-2xl p-4 text-center text-sm font-bold outline-none border-white/5 focus:border-[#FF5C00]`}
+                value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)}
+              />
               <input 
                 autoFocus type="password" placeholder="PASSWORD"
                 className={`w-full bg-black/60 border-2 rounded-2xl p-5 text-center text-xl font-black tracking-[0.3em] outline-none ${loginError ? 'border-red-500 animate-shake' : 'border-white/5 focus:border-[#FF5C00]'}`}
                 value={loginPass} onChange={(e) => setLoginPass(e.target.value)}
               />
-              <button type="submit" className="w-full bg-[#FF5C00] text-white py-5 rounded-2xl font-black uppercase shadow-xl hover:scale-[1.02] transition-all">AUTENTICAR</button>
+              <button type="submit" className="w-full bg-[#FF5C00] text-white py-5 rounded-2xl font-black uppercase shadow-xl hover:scale-[1.02] transition-all">ACCEDER</button>
             </form>
           </div>
         </div>
@@ -1252,7 +1310,7 @@ const App = () => {
         <section className="max-w-4xl mx-auto px-6 mb-40">
           <div className="bg-[#141414] border-2 border-[#FF5C00]/30 rounded-[2.5rem] p-8 md:p-12 shadow-[0_0_100px_rgba(255,92,0,0.1)] relative overflow-hidden">
             <div className="absolute -top-6 left-12 bg-[#FF5C00] text-black font-black uppercase px-6 py-2 rounded-xl text-[10px] italic shadow-xl z-20">
-              {isAdmin ? "Admin Dashboard (Unlimited Access)" : `${t('credits')}: ${Math.max(0, MAX_FREE_TRIAL - trialCount)} / ${MAX_FREE_TRIAL}`}
+              {isAdmin ? "Admin Dashboard (Unlimited Access)" : `${t('credits')}: ${Math.max(0, (userPlan === 'starter' ? STARTER_LIMIT : MAX_FREE_TRIAL) - trialCount)} / ${userPlan === 'starter' ? STARTER_LIMIT : MAX_FREE_TRIAL}`}
             </div>
             
             <div className="space-y-8">
@@ -1279,7 +1337,7 @@ const App = () => {
                     <Lock className="w-10 h-10 text-[#FF5C00] mb-6" />
                     <h4 className="text-3xl font-black uppercase italic mb-2">{t('lockedTitle')}</h4>
                     <p className="text-gray-300 font-bold uppercase text-xs tracking-widest italic max-w-xs">{t('lockedSub')}</p>
-                    <button onClick={scrollToPricing} className="mt-8 bg-[#FF5C00] text-white px-10 py-5 rounded-2xl font-black uppercase text-xl shadow-2xl hover:scale-105 transition-all">
+                    <button onClick={scrollToPricing} className="mt-8 bg-[#FF5C00] text-white px-10 py-5 rounded-2xl font-black uppercase text-xl shadow-2xl hover:scale-[1.02] transition-all">
                       {t('unlockNow')}
                     </button>
                   </div>
@@ -1338,7 +1396,7 @@ const App = () => {
               <h3 className="text-3xl font-black uppercase italic flex items-center gap-3"><History className="w-8 h-8 text-[#FF5C00]" /> {t('historyTitle')}</h3>
               <p className="text-gray-500 text-sm font-bold uppercase tracking-widest mt-1 italic">{t('historySub')}</p>
             </div>
-            {history.length > 0 && !isLocked && (
+            {history.length > 0 && (
               <div className="relative">
                 <button 
                   onClick={() => setExportMenuOpen(!exportMenuOpen)}
@@ -1375,12 +1433,13 @@ const App = () => {
                 const titleMatch = item.text.match(/##\s*(.*)/) || item.text.match(/#\s*(.*)/);
                 const title = titleMatch ? titleMatch[1].replace(/\*/g, '').trim() : (language === 'es' ? "Oferta Grand Slam" : "Grand Slam Offer");
                 const isExpanded = expandedOfferId === item.id;
+                // Formatted date DD/MM/YYYY HH:MM
                 const dateStr = new Date(item.timestamp).toLocaleString(language === 'es' ? 'es-ES' : 'en-US', {
                   day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
-                });
+                }).replace(',', '');
 
                 return (
-                  <div key={item.id} className="group bg-[#141414] border border-white/5 hover:border-[#FF5C00]/40 rounded-[2rem] p-8 transition-all shadow-2xl hover:shadow-[#FF5C00]/5">
+                  <div key={item.id} className="group bg-[#141414] border border-white/5 hover:border-[#FF5C00]/40 rounded-[2rem] p-8 transition-all shadow-2xl hover:shadow-[#FF5C00]/10 hover:-translate-y-1">
                     <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-3">
@@ -1388,8 +1447,8 @@ const App = () => {
                           <span className="bg-white/5 px-2 py-1 rounded text-[8px] font-black uppercase text-gray-500 border border-white/5 tracking-widest">{item.offerType}</span>
                         </div>
                         <h4 className="text-2xl font-black uppercase italic text-white group-hover:text-[#FF5C00] transition-colors mb-2 line-clamp-1">{title}</h4>
-                        <p className="text-gray-500 text-sm font-bold italic bg-black/30 px-3 py-1.5 rounded-lg border border-white/5 w-fit italic truncate max-w-full">
-                          "{item.input.substring(0, 100)}{item.input.length > 100 ? '...' : ''}"
+                        <p className="text-gray-500 text-xs font-bold italic bg-black/20 px-4 py-2 rounded-xl border border-white/5 w-full italic truncate">
+                          "{item.input}"
                         </p>
                       </div>
                       <div className="flex items-center gap-3 shrink-0">
