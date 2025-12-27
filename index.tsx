@@ -65,7 +65,9 @@ import {
   Send,
   ShieldQuestion,
   Crown,
-  LogIn
+  LogIn,
+  LayoutDashboard,
+  User
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { jsPDF } from "jspdf";
@@ -156,6 +158,9 @@ const translations = {
     navAdmin: "Panel Maestro",
     navPremium: "Herramientas Premium",
     navAnalyzer: "Analizador",
+    navPanel: "Mi Bóveda",
+    panelTitle: "BÓVEDA ESTRATÉGICA",
+    panelSub: "Gestiona tu arsenal de ofertas ganadoras.",
     close: "Cerrar",
     exportJson: "Exportar JSON",
     exportTxt: "Exportar TXT",
@@ -212,6 +217,9 @@ const translations = {
     navAdmin: "Master Panel",
     navPremium: "Premium Tools",
     navAnalyzer: "Analyzer",
+    navPanel: "My Vault",
+    panelTitle: "STRATEGIC VAULT",
+    panelSub: "Manage your arsenal of winning offers.",
     close: "Close",
     exportJson: "Export JSON",
     exportTxt: "Export TXT",
@@ -331,6 +339,7 @@ const App = () => {
   const [showLogin, setShowLogin] = useState(false);
   const [showSignup, setShowSignup] = useState<string | null>(null);
   const [showPremiumHub, setShowPremiumHub] = useState(false);
+  const [showUserDashboard, setShowUserDashboard] = useState(false);
   const [loginPass, setLoginPass] = useState('');
   const [loginEmail, setLoginEmail] = useState('');
   const [loginError, setLoginError] = useState(false);
@@ -475,6 +484,7 @@ const App = () => {
     localStorage.setItem(ADMIN_KEY, JSON.stringify(false));
     localStorage.setItem(USER_PLAN_KEY, 'free');
     setAdminMenuOpen(false);
+    setShowUserDashboard(false);
   };
 
   const analyzeCompetitor = async () => {
@@ -669,6 +679,7 @@ const App = () => {
   const duplicateOffer = (originalInput: string) => {
     setInput(originalInput);
     window.scrollTo({ top: 400, behavior: 'smooth' });
+    setShowUserDashboard(false);
   };
 
   const exportJSON = () => {
@@ -989,6 +1000,16 @@ const App = () => {
               </button>
             )}
 
+            {(userPlan !== 'free' || isAdmin || history.length > 0) && (
+              <button 
+                onClick={() => setShowUserDashboard(true)}
+                className="text-xs font-black uppercase flex items-center gap-2 px-4 py-2 rounded-full border border-[#FF5C00]/20 bg-[#FF5C00]/5 text-[#FF5C00] hover:bg-[#FF5C00]/10 transition-all"
+              >
+                <LayoutDashboard className="w-4 h-4" />
+                {t('navPanel')}
+              </button>
+            )}
+
             <button 
               onClick={() => setShowPremiumHub(true)}
               className={`text-xs font-black uppercase flex items-center gap-2 px-5 py-2.5 rounded-full border transition-all ${isScaleMaster ? 'bg-[#FF5C00]/10 border-[#FF5C00]/40 text-[#FF5C00] hover:bg-[#FF5C00]/20' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'}`}
@@ -1190,6 +1211,160 @@ const App = () => {
         </div>
       )}
 
+      {/* USER PERSONALIZED PANEL MODAL */}
+      {showUserDashboard && (
+        <div className="fixed inset-0 z-[65] bg-black/95 backdrop-blur-3xl p-6 overflow-y-auto animate-in slide-in-from-right-10 duration-500">
+          <div className="max-w-6xl mx-auto pb-20 pt-10">
+            
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-16 border-b border-white/10 pb-10 gap-8">
+              <div className="flex items-center gap-6">
+                <div className="p-5 bg-[#FF5C00] rounded-3xl shadow-[0_0_30px_rgba(255,92,0,0.3)]">
+                  <LayoutDashboard className="w-10 h-10 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-4xl font-black italic uppercase text-white tracking-tighter">
+                    {t('panelTitle')}
+                  </h2>
+                  <p className="text-gray-500 font-bold uppercase tracking-widest text-xs mt-2 italic">{t('panelSub')}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-4 flex-wrap">
+                <div className="bg-white/5 border border-white/10 px-6 py-3 rounded-2xl">
+                  <span className="text-[9px] font-black text-gray-500 uppercase block mb-1">PLAN ACTUAL</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-white font-black uppercase text-sm tracking-tighter italic">{userPlan}</span>
+                    <Star className="w-3 h-3 text-[#FF5C00] fill-[#FF5C00]" />
+                  </div>
+                </div>
+                <div className="bg-white/5 border border-white/10 px-6 py-3 rounded-2xl">
+                  <span className="text-[9px] font-black text-gray-500 uppercase block mb-1">OFERTAS GENERADAS</span>
+                  <span className="text-white font-black text-sm italic tracking-tighter">{history.length}</span>
+                </div>
+                <button onClick={() => setShowUserDashboard(false)} className="bg-white/10 p-5 rounded-2xl hover:bg-white/20 transition-all border border-white/5 shadow-xl">
+                  <X className="w-8 h-8" />
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-10">
+              {/* Sidebar tools */}
+              <div className="lg:col-span-1 space-y-8">
+                <div className="bg-black/40 border border-white/5 rounded-[2rem] p-8 space-y-6">
+                  <h4 className="text-xs font-black text-[#FF5C00] uppercase tracking-widest italic border-b border-white/5 pb-4">Herramientas</h4>
+                  
+                  <div className="space-y-3">
+                    <button onClick={exportJSON} className="w-full flex items-center justify-between p-4 bg-white/5 rounded-2xl hover:bg-[#FF5C00]/10 hover:text-[#FF5C00] transition-all group">
+                      <div className="flex items-center gap-3">
+                        <FileJson className="w-5 h-5 opacity-50 group-hover:opacity-100" />
+                        <span className="text-[10px] font-black uppercase">{t('exportJson')}</span>
+                      </div>
+                      <ChevronRight className="w-4 h-4 opacity-30" />
+                    </button>
+                    <button onClick={exportTXT} className="w-full flex items-center justify-between p-4 bg-white/5 rounded-2xl hover:bg-[#FF5C00]/10 hover:text-[#FF5C00] transition-all group">
+                      <div className="flex items-center gap-3">
+                        <FileText className="w-5 h-5 opacity-50 group-hover:opacity-100" />
+                        <span className="text-[10px] font-black uppercase">{t('exportTxt')}</span>
+                      </div>
+                      <ChevronRight className="w-4 h-4 opacity-30" />
+                    </button>
+                    <button onClick={exportPDF} className="w-full flex items-center justify-between p-4 bg-white/5 rounded-2xl hover:bg-[#FF5C00]/10 hover:text-[#FF5C00] transition-all group">
+                      <div className="flex items-center gap-3">
+                        <FileDown className="w-5 h-5 opacity-50 group-hover:opacity-100" />
+                        <span className="text-[10px] font-black uppercase">{t('exportPdf')}</span>
+                      </div>
+                      <ChevronRight className="w-4 h-4 opacity-30" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Main content: history cards */}
+              <div className="lg:col-span-3">
+                <div className="flex items-center justify-between mb-8">
+                  <h3 className="text-2xl font-black uppercase italic flex items-center gap-3">
+                    <History className="w-6 h-6 text-[#FF5C00]" /> 
+                    {t('historyTitle')}
+                  </h3>
+                  <div className="bg-white/5 px-4 py-2 rounded-full border border-white/10">
+                    <span className="text-[10px] font-black uppercase text-gray-500">{history.length} ITEMS TOTALES</span>
+                  </div>
+                </div>
+
+                {history.length === 0 ? (
+                  <div className="bg-black/20 border-2 border-dashed border-white/5 rounded-[3rem] p-24 text-center">
+                    <div className="bg-white/5 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+                      <ShoppingBag className="w-8 h-8 text-gray-600" />
+                    </div>
+                    <p className="text-gray-500 font-bold max-w-sm mx-auto text-lg italic leading-relaxed uppercase tracking-tighter">
+                      {t('historyEmpty')}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-6">
+                    {history.map((item) => {
+                      const titleMatch = item.text.match(/##\s*(.*)/) || item.text.match(/#\s*(.*)/);
+                      const title = titleMatch ? titleMatch[1].replace(/\*/g, '').trim() : "Oferta Grand Slam";
+                      const isExpanded = expandedOfferId === item.id;
+                      const dateStr = new Date(item.timestamp).toLocaleString(language === 'es' ? 'es-ES' : 'en-US', {
+                        day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                      });
+
+                      return (
+                        <div key={item.id} className="group bg-black/40 border border-white/5 hover:border-[#FF5C00]/40 rounded-[2.5rem] p-8 md:p-10 transition-all shadow-2xl relative overflow-hidden">
+                          <div className="flex flex-col md:flex-row md:items-start justify-between gap-8">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-4 mb-4">
+                                <span className="text-[10px] font-black text-[#FF5C00] uppercase tracking-[0.2em] bg-[#FF5C00]/10 px-3 py-1 rounded-full">{dateStr}</span>
+                                <span className="bg-white/5 px-3 py-1 rounded-full text-[9px] font-black uppercase text-gray-400 border border-white/5 italic">{item.offerType}</span>
+                              </div>
+                              <h4 className="text-3xl font-black uppercase italic text-white group-hover:text-[#FF5C00] transition-colors mb-4 truncate">{title}</h4>
+                              <div className="bg-white/5 border border-white/10 p-5 rounded-2xl">
+                                <p className="text-gray-400 text-xs font-bold italic leading-relaxed line-clamp-2">
+                                  "{item.input}"
+                                </p>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-3 shrink-0 flex-wrap md:flex-nowrap">
+                              <button 
+                                onClick={() => setExpandedOfferId(isExpanded ? null : item.id)} 
+                                className={`flex items-center gap-2 px-8 py-4 rounded-2xl text-[10px] font-black uppercase transition-all border ${isExpanded ? 'bg-[#FF5C00] text-white border-[#FF5C00] shadow-[0_0_20px_rgba(255,92,0,0.3)]' : 'bg-white/5 text-white border-white/5 hover:bg-white/10'}`}
+                              >
+                                {isExpanded ? <ChevronUp className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                {isExpanded ? t('close') : t('viewFull')}
+                              </button>
+                              <button onClick={() => duplicateOffer(item.input)} className="p-5 bg-white/5 hover:bg-[#FF5C00]/20 hover:text-[#FF5C00] text-white rounded-2xl transition-all border border-white/5 group/btn">
+                                <Plus className="w-6 h-6 group-hover/btn:rotate-90 transition-transform" />
+                              </button>
+                              <button onClick={() => deleteOffer(item.id)} className="p-5 bg-white/5 hover:bg-red-500/20 text-gray-500 hover:text-red-500 rounded-2xl transition-all border border-white/5">
+                                <Trash2 className="w-6 h-6" />
+                              </button>
+                            </div>
+                          </div>
+                          
+                          {isExpanded && (
+                            <div className="mt-10 pt-10 border-t border-white/10 animate-in slide-in-from-top-4 duration-500 prose prose-invert max-w-none">
+                              <ReactMarkdown components={{
+                                h2: ({...props}) => <h2 className="text-[#FF5C00] text-3xl font-black uppercase italic mb-8" {...props} />,
+                                li: ({...props}) => <li className="bg-white/5 border-l-4 border-[#FF5C00] p-6 rounded-r-2xl mb-4 text-lg" {...props} />,
+                              }}>
+                                {item.text}
+                              </ReactMarkdown>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+
       {/* PREMIUM HUB MODAL (FOR SCALE MASTER) */}
       {showPremiumHub && (
           <div className="fixed inset-0 z-[70] bg-black/95 backdrop-blur-3xl p-6 overflow-y-auto animate-in slide-in-from-top-10 duration-500">
@@ -1385,92 +1560,6 @@ const App = () => {
                   </div>
                 )}
               </div>
-            </div>
-          )}
-        </section>
-
-        {/* HISTORIAL SECTION */}
-        <section className="max-w-4xl mx-auto px-6 mb-40">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
-            <div>
-              <h3 className="text-3xl font-black uppercase italic flex items-center gap-3"><History className="w-8 h-8 text-[#FF5C00]" /> {t('historyTitle')}</h3>
-              <p className="text-gray-500 text-sm font-bold uppercase tracking-widest mt-1 italic">{t('historySub')}</p>
-            </div>
-            {history.length > 0 && (
-              <div className="relative">
-                <button 
-                  onClick={() => setExportMenuOpen(!exportMenuOpen)}
-                  className="flex items-center gap-2 px-8 py-3 bg-[#FF5C00] text-white rounded-xl text-[10px] font-black uppercase shadow-lg shadow-[#FF5C00]/20 hover:scale-105 transition-all"
-                >
-                  <Download className="w-4 h-4" /> {t('exportBtn')} <ChevronDown className={`w-4 h-4 transition-transform ${exportMenuOpen ? 'rotate-180' : ''}`} />
-                </button>
-                {exportMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-[#141414] border border-white/10 rounded-2xl overflow-hidden shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                    <button onClick={exportJSON} className="w-full flex items-center gap-3 px-6 py-4 text-[10px] font-black uppercase text-gray-400 hover:text-[#FF5C00] hover:bg-white/5 border-b border-white/5 transition-all">
-                      <FileJson className="w-4 h-4" /> {t('exportJson')}
-                    </button>
-                    <button onClick={exportTXT} className="w-full flex items-center gap-3 px-6 py-4 text-[10px] font-black uppercase text-gray-400 hover:text-[#FF5C00] hover:bg-white/5 transition-all">
-                      <FileText className="w-4 h-4" /> {t('exportTxt')}
-                    </button>
-                    <button onClick={exportPDF} className="w-full flex items-center gap-3 px-6 py-4 text-[10px] font-black uppercase text-gray-400 hover:text-[#FF5C00] hover:bg-white/5 transition-all">
-                      <FileDown className="w-4 h-4" /> {t('exportPdf')}
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {history.length === 0 ? (
-            <div className="bg-[#141414] border-2 border-white/5 border-dashed rounded-[2.5rem] p-16 text-center opacity-40">
-              <p className="text-gray-500 font-bold max-w-sm mx-auto text-lg italic leading-relaxed uppercase tracking-tighter">
-                {t('historyEmpty')}
-              </p>
-            </div>
-          ) : (
-            <div className={`grid grid-cols-1 gap-6 ${isLocked ? 'opacity-30 pointer-events-none' : ''}`}>
-              {history.map((item) => {
-                const titleMatch = item.text.match(/##\s*(.*)/) || item.text.match(/#\s*(.*)/);
-                const title = titleMatch ? titleMatch[1].replace(/\*/g, '').trim() : (language === 'es' ? "Oferta Grand Slam" : "Grand Slam Offer");
-                const isExpanded = expandedOfferId === item.id;
-                // Formatted date DD/MM/YYYY HH:MM
-                const dateStr = new Date(item.timestamp).toLocaleString(language === 'es' ? 'es-ES' : 'en-US', {
-                  day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
-                }).replace(',', '');
-
-                return (
-                  <div key={item.id} className="group bg-[#141414] border border-white/5 hover:border-[#FF5C00]/40 rounded-[2rem] p-8 transition-all shadow-2xl hover:shadow-[#FF5C00]/10 hover:-translate-y-1">
-                    <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-3">
-                          <span className="text-[10px] font-black text-[#FF5C00] uppercase tracking-widest">{dateStr}</span>
-                          <span className="bg-white/5 px-2 py-1 rounded text-[8px] font-black uppercase text-gray-500 border border-white/5 tracking-widest">{item.offerType}</span>
-                        </div>
-                        <h4 className="text-2xl font-black uppercase italic text-white group-hover:text-[#FF5C00] transition-colors mb-2 line-clamp-1">{title}</h4>
-                        <p className="text-gray-500 text-xs font-bold italic bg-black/20 px-4 py-2 rounded-xl border border-white/5 w-full italic truncate">
-                          "{item.input}"
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-3 shrink-0">
-                        <button 
-                          onClick={() => setExpandedOfferId(isExpanded ? null : item.id)} 
-                          className={`flex items-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black uppercase transition-all border ${isExpanded ? 'bg-[#FF5C00] text-white border-[#FF5C00] shadow-lg shadow-[#FF5C00]/20' : 'bg-white/5 text-white border-white/5 hover:bg-white/10'}`}
-                        >
-                          {isExpanded ? <ChevronUp className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                          {isExpanded ? t('close') : t('viewFull')}
-                        </button>
-                        <button onClick={() => duplicateOffer(item.input)} className="p-3 bg-white/5 hover:bg-white/10 text-white rounded-xl transition-all border border-white/5" title={t('duplicate')}>
-                          <Plus className="w-5 h-5" />
-                        </button>
-                        <button onClick={() => deleteOffer(item.id)} className="p-3 bg-white/5 hover:bg-red-500/10 text-gray-500 hover:text-red-500 rounded-xl transition-all border border-white/5" title={t('delete')}>
-                          <Trash2 className="w-5 h-5" />
-                        </button>
-                      </div>
-                    </div>
-                    {isExpanded && <div className="mt-8 pt-8 border-t border-white/5 animate-in slide-in-from-top-4 duration-500 prose prose-invert max-w-none"><ReactMarkdown>{item.text}</ReactMarkdown></div>}
-                  </div>
-                );
-              })}
             </div>
           )}
         </section>
