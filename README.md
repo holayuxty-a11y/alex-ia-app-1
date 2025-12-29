@@ -1,37 +1,20 @@
+<div align="center">
+<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+</div>
 
-# Configuración de AlexIA con Supabase
+# Run and deploy your AI Studio app
 
-## 1. Crear Proyecto en Supabase
-1. Ve a [Supabase](https://supabase.com/) y crea un nuevo proyecto.
-2. Obtén la `URL` y la `ANON_KEY` desde la sección de **Project Settings > API**.
+This contains everything you need to run your app locally.
 
-## 2. Crear Tabla de Usuarios
-Ejecuta el siguiente SQL en el **SQL Editor** de Supabase para crear la tabla necesaria:
+View your app in AI Studio: https://ai.studio/apps/drive/1gtsKEw02cuStNQ4vTI0p4fgPOUVzV6K4
 
-```sql
-CREATE TABLE users (
-  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  name text NOT NULL,
-  email text UNIQUE NOT NULL,
-  password text NOT NULL,
-  plan text DEFAULT 'free',
-  role text DEFAULT 'user',
-  trial_count integer DEFAULT 0,
-  created_at timestamptz DEFAULT now()
-);
+## Run Locally
 
--- Habilitar RLS (Opcional, para mayor seguridad configurar políticas)
-ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+**Prerequisites:**  Node.js
 
--- Política simple para permitir lectura/escritura (ajustar según necesidad)
-CREATE POLICY "Allow all for now" ON users FOR ALL USING (true);
-```
 
-## 3. Configurar Variables de Entorno
-Añade las siguientes variables en tu entorno local o en Vercel:
-- `API_KEY`: Tu clave de Google Gemini API.
-- `SUPABASE_URL`: La URL de tu proyecto.
-- `SUPABASE_ANON_KEY`: Tu clave anónima.
-
-## 4. Despliegue en Vercel
-Simplemente conecta tu repositorio y asegúrate de añadir las variables de entorno mencionadas arriba.
+1. Install dependencies:
+   `npm install`
+2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+3. Run the app:
+   `npm run dev`
