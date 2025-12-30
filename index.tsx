@@ -939,7 +939,7 @@ const App = () => {
                 <button 
                 key={type}
                 onClick={() => setScriptType(type)}
-                className={`p-4 rounded-xl border-2 text-[10px] font-black uppercase italic flex items-center justify-center gap-2 transition-all ${scriptType === type ? 'bg-[#FF5C00] border-[#FF5C00] text-white shadow-lg' : 'bg-black/20 border-white/5 text-gray-500 hover:text-white'}`}
+                className={`p-4 rounded-xl border-2 text-[10px] font-black uppercase italic flex items-center justify-center gap-2 transition-all ${scriptType === type ? 'bg-[#FF5C00] border-[#FF5C00] text-white shadow-lg' : 'bg-black/40 border-white/5 text-gray-500 hover:text-white'}`}
                 >
                 {type === 'vsl' ? <Video className="w-4 h-4" /> : type === 'closer' ? <Mic className="w-4 h-4" /> : type === 'dm' ? <Send className="w-4 h-4" /> : <Mail className="w-4 h-4" />}
                 {t(`scriptType${type.toUpperCase()}` as any)}
@@ -1664,6 +1664,7 @@ const App = () => {
 
       <footer className="py-20 bg-[#050505] border-t border-white/5 text-center">
         <div className="max-w-xl mx-auto px-6">
+           <p className="text-[#FF5C00] font-black uppercase italic tracking-widest text-sm mb-4">Nada es imposible Si lo crees lo creas</p>
            <div className="flex items-center justify-center gap-2 font-black italic text-3xl mb-8"><Zap className="w-8 h-8 text-[#FF5C00]" fill="#FF5C00" />ALEXIA</div>
           <p className="text-gray-500 font-bold uppercase tracking-widest text-[10px] mb-8 leading-relaxed italic">© {new Date().getFullYear()} AlexIA - {language === 'es' ? 'Todos los derechos reservados' : 'All rights reserved'}.</p>
         </div>
