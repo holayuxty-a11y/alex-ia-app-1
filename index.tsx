@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+// Trigger deployment
 import { createRoot } from 'react-dom/client';
 import { GoogleGenAI } from "@google/genai";
 import { createClient } from '@supabase/supabase-js';
