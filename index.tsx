@@ -74,8 +74,8 @@ import ReactMarkdown from 'react-markdown';
 import { jsPDF } from "jspdf";
 
 // --- Supabase Client ---
-const supabaseUrl = 'https://sxetinqdzjlstdlanjma.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN4ZXRpbnFkemp5c3RkbGFuam1hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzUyMjc3MDMsImV4cCI6MjA1MDgwMzcwM30.gQfWR8rjuMG_czUsjsXUXzS1f3nfGz2OZQ3gaBPw_UaOg2i';
+const supabaseUrl = process.env.SUPABASE_URL || '';
+const supabaseKey = process.env.SUPABASE_ANON_KEY || '';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // --- Types ---
@@ -529,7 +529,7 @@ const App = () => {
     setCompetitorResult('');
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const ai = new GoogleGenAI({ 77 });
       const stream = await ai.models.generateContentStream({
         model: 'gemini-3-pro-preview',
         contents: `ANALIZA ESTA COMPETENCIA: ${competitorInput}. 
